@@ -53,9 +53,18 @@ public class Breakout extends GraphicsProgram {
 	
 	/** Number of turns */
     private static final int NTURNS = 3;
+    
+    /** Animation delay */
+    private static final int DELAY = 10;
 
+    /** Paddle and ball */
     private GRect paddle;     
     private GOval ball;
+    
+    /* Velocity of the ball */
+    private double vx, vy;
+    
+    private RandomGenerator rgen = RandomGenerator.getInstance();
     
     public void run() {
     	setupGame();
@@ -69,7 +78,44 @@ public class Breakout extends GraphicsProgram {
     }
     
     private void startGame() {
+    	setInitialBallVelocity();
     	
+    	int i = 0;
+    	while(true) {
+    		moveBall();
+    		bounceIfWallCollision();
+    		pause(DELAY);
+    		i++;
+    		if (i == 800) break;
+    	}
+    }
+    
+    /**
+     * move the ball according to vx and vy.
+     */
+    private void moveBall() {
+    	ball.move(vx, vy);
+    }
+    
+    /**
+     * Reverse vx or vy if ball collides with wall.
+     */
+    private void bounceIfWallCollision() {
+    	double x = ball.getX();
+    	double y = ball.getY();
+    	
+    	if (x <= 0 || (x + BALL_RADIUS) >= WIDTH) vx = -vx;
+    	if (y <= 0 || (y + BALL_RADIUS) >= HEIGHT) vy = -vy;
+    }
+    
+    /**
+     * Set initial value for vx and vy.
+     */
+    private void setInitialBallVelocity() {
+    	vx = rgen.nextDouble(1.0, 3.0);
+    	if (rgen.nextBoolean(0.5)) vx = -vx;
+    	
+    	vy = 3;
     }
     
     /**
@@ -82,10 +128,12 @@ public class Breakout extends GraphicsProgram {
     	
     	for (int i = 0; i < NBRICK_ROWS; i++) {
     		color = getColorForRow(i);
+    		
     		for (int j = 0; j < NBRICKS_PER_ROW; j++) {
     			drawBrick(x, y, color);
     			x += BRICK_SEP + BRICK_WIDTH;
     		}
+    		
     		x = BRICK_SEP / 2;
     		y += BRICK_SEP + BRICK_HEIGHT;
     	}
@@ -97,9 +145,11 @@ public class Breakout extends GraphicsProgram {
     private void drawPaddle() {
     	int x = (WIDTH / 2) - (PADDLE_WIDTH / 2);
     	int y = HEIGHT - PADDLE_Y_OFFSET - PADDLE_HEIGHT;
+    	
     	paddle = new GRect(PADDLE_WIDTH, PADDLE_HEIGHT);
     	paddle.setFilled(true);;
     	paddle.setFillColor(Color.BLACK);
+    	
     	add(paddle, x, y);
     }
     
@@ -107,7 +157,13 @@ public class Breakout extends GraphicsProgram {
      * Draw the ball.
      */
     private void drawBall() {
+    	int x = WIDTH / 2 - BALL_RADIUS / 2;
+    	int y = HEIGHT / 2 - BALL_RADIUS / 2;
+    	ball = new GOval(BALL_RADIUS, BALL_RADIUS);
+    	ball.setFilled(true);
+    	ball.setFillColor(Color.BLACK);
     	
+    	add(ball, x, y);
     }
     
     /**
