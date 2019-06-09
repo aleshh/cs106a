@@ -1,10 +1,10 @@
 package com.srccodes.example;
 
 /*
-* File: Breakout.java
-* -------------------
-* This file will eventually implement the game of Breakout.
-*/
+ * File: Breakout.java
+ * -------------------
+ * This file will eventually implement the game of Breakout.
+ */
 
  import acm.graphics.*;
  import acm.program.*;
@@ -13,6 +13,7 @@ package com.srccodes.example;
  import java.awt.*;
  import java.awt.event.*;
  
+@SuppressWarnings("serial") 
 public class Breakout extends GraphicsProgram {
 	
 	/** Width and height of application window in pixels */ 
@@ -29,6 +30,9 @@ public class Breakout extends GraphicsProgram {
 	
 	/** Offset of the paddle up from the bottom */ 
 	private static final int PADDLE_Y_OFFSET = 30;
+	
+	/** Paddle distance from top of application */
+	private static final int PADDLE_POSITION = HEIGHT - PADDLE_Y_OFFSET - PADDLE_HEIGHT;
 	
 	/** Number of bricks per row */
 	private static final int NBRICKS_PER_ROW = 10;
@@ -55,18 +59,30 @@ public class Breakout extends GraphicsProgram {
     private static final int NTURNS = 3;
     
     /** Animation delay */
-    private static final int DELAY = 10;
+    private static final int DELAY = 7;
+    
+    /** Keyboard paddle speed */
+    private static final int KEY_PADDLE_SPEED = 3;
+    
 
     /** Paddle and ball */
     private GRect paddle;     
     private GOval ball;
+    private GLabel message;
     
-    /* Velocity of the ball */
+    /** Velocity of the ball */
     private double vx, vy;
+    
+    private int paddleXPosition = (WIDTH / 2) - (PADDLE_WIDTH / 2);
+    
+    private int keyMouseMove = 0;
+    
+    private int nBricksRemaining = NBRICK_ROWS * NBRICKS_PER_ROW;
     
     private RandomGenerator rgen = RandomGenerator.getInstance();
     
     public void run() {
+    	setupDebugMessage();
     	setupGame();
     	startGame();
     } 
@@ -75,19 +91,66 @@ public class Breakout extends GraphicsProgram {
     	drawBricks();
     	drawPaddle();
     	drawBall();
+    	requestFocusInWindow();
     }
     
     private void startGame() {
     	setInitialBallVelocity();
     	
+    	addMouseListeners();
+    	addKeyListeners();
+    	
     	int i = 0;
     	while(true) {
     		moveBall();
     		bounceIfWallCollision();
+    		handleObjectCollision();
+    		movePaddleOnKeydown();
+    		
+    		if (nBricksRemaining == 0) {
+//    			levelFinished();
+    		}
+    		
     		pause(DELAY);
     		i++;
-    		if (i == 800) break;
+    		if (i == 8000) break;
     	}
+    }
+    
+    public void mouseMoved(MouseEvent e) {
+    	int paddleOffset = e.getX() - paddleXPosition;
+    	paddleXPosition += paddleOffset;
+    	
+    	paddle.move(paddleOffset, 0);
+    }
+
+    public void keyTyped(KeyEvent e) {
+    	displayMessage("Key typed");
+    }
+    
+    public void keyPressed(KeyEvent e) {
+    	int keyCode = e.getKeyCode();
+    	
+    	if (keyCode == 37) {
+    		keyMouseMove = -KEY_PADDLE_SPEED;
+    	}
+    	if (keyCode == 39) {
+    		keyMouseMove = KEY_PADDLE_SPEED;
+    	}
+    }
+    
+    public void keyReleased(KeyEvent e)  {
+    	keyMouseMove = 0;
+    }
+    
+    public void movePaddleOnKeydown() {
+    	if (keyMouseMove == 0) return;
+    	double paddlePosition = paddle.getX();
+    	
+    	if (paddlePosition <= 0 && keyMouseMove == -KEY_PADDLE_SPEED) return;
+    	if (paddlePosition > WIDTH - PADDLE_WIDTH && keyMouseMove == KEY_PADDLE_SPEED) return;
+
+    	paddle.move(keyMouseMove, 0);
     }
     
     /**
@@ -104,8 +167,36 @@ public class Breakout extends GraphicsProgram {
     	double x = ball.getX();
     	double y = ball.getY();
     	
-    	if (x <= 0 || (x + BALL_RADIUS) >= WIDTH) vx = -vx;
-    	if (y <= 0 || (y + BALL_RADIUS) >= HEIGHT) vy = -vy;
+    	if (x <= 0 || (x + BALL_RADIUS * 2) >= WIDTH) vx = -vx;
+    	if (y <= 0 || (y + BALL_RADIUS * 2) >= HEIGHT) vy = -vy;
+    }
+    
+    /**
+     * 
+     */
+    private void handleObjectCollision() {
+    	GObject obstacle = getCollidingObject();
+    	if (obstacle != null) {
+    		vy = -vy;
+    		if (obstacle != paddle) {
+    			remove(obstacle);
+    			nBricksRemaining -= 1;
+    		}
+    	}
+    }
+    
+    private GObject getCollidingObject() {
+    	double x1 = ball.getX();
+    	double y1 = ball.getY();
+    	double x2 = x1 + BALL_RADIUS * 2;
+    	double y2 = y1 + BALL_RADIUS * 2;
+   
+    	if (getElementAt(x1, y1) != null) return getElementAt(x1, y1);
+    	if (getElementAt(x1, y2) != null) return getElementAt(x1, y2);
+    	if (getElementAt(x2, y1) != null) return getElementAt(x2, y1);
+    	if (getElementAt(x2, y2) != null) return getElementAt(x2, y2);
+    
+    	return null;
     }
     
     /**
@@ -143,8 +234,8 @@ public class Breakout extends GraphicsProgram {
      * Draw the paddle
      */
     private void drawPaddle() {
-    	int x = (WIDTH / 2) - (PADDLE_WIDTH / 2);
-    	int y = HEIGHT - PADDLE_Y_OFFSET - PADDLE_HEIGHT;
+    	int x = paddleXPosition;
+    	int y = PADDLE_POSITION;
     	
     	paddle = new GRect(PADDLE_WIDTH, PADDLE_HEIGHT);
     	paddle.setFilled(true);;
@@ -157,9 +248,9 @@ public class Breakout extends GraphicsProgram {
      * Draw the ball.
      */
     private void drawBall() {
-    	int x = WIDTH / 2 - BALL_RADIUS / 2;
-    	int y = HEIGHT / 2 - BALL_RADIUS / 2;
-    	ball = new GOval(BALL_RADIUS, BALL_RADIUS);
+    	int x = WIDTH / 2 - BALL_RADIUS;
+    	int y = HEIGHT / 2 - BALL_RADIUS;
+    	ball = new GOval(BALL_RADIUS * 2, BALL_RADIUS * 2);
     	ball.setFilled(true);
     	ball.setFillColor(Color.BLACK);
     	
@@ -191,5 +282,14 @@ public class Breakout extends GraphicsProgram {
     	brick.setColor(color);
     	brick.setFillColor(color);
     	add(brick);
+    }
+    
+    private void setupDebugMessage() {
+    	message = new GLabel("");
+    	add(message, 10, 10);
+    }
+    
+    private void displayMessage(String info) {
+    	message.setLabel("" + info);
     }
 }
