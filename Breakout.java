@@ -64,7 +64,6 @@ public class Breakout extends GraphicsProgram {
     /** Keyboard paddle speed */
     private static final int KEY_PADDLE_SPEED = 3;
     
-
     /** Paddle and ball */
     private GRect paddle;     
     private GOval ball;
@@ -73,12 +72,16 @@ public class Breakout extends GraphicsProgram {
     /** Velocity of the ball */
     private double vx, vy;
     
+    /** Paddle distance from left edge in pixels. */
     private int paddleXPosition = (WIDTH / 2) - (PADDLE_WIDTH / 2);
     
+    /** Current mouse movement by keyboard: -1, 0, or 1 */
     private int keyMouseMove = 0;
     
+    /** Bricks remaining in level */
     private int nBricksRemaining = NBRICK_ROWS * NBRICKS_PER_ROW;
     
+    /** Random number generator */
     private RandomGenerator rgen = RandomGenerator.getInstance();
     
     public void run() {
@@ -91,7 +94,6 @@ public class Breakout extends GraphicsProgram {
     	drawBricks();
     	drawPaddle();
     	drawBall();
-    	requestFocusInWindow();
     }
     
     private void startGame() {
@@ -100,20 +102,46 @@ public class Breakout extends GraphicsProgram {
     	addMouseListeners();
     	addKeyListeners();
     	
-    	int i = 0;
-    	while(true) {
+    	int remainingTurns = NTURNS;
+    	
+    	
+    	while(nBricksRemaining > 0 && remainingTurns > 0) {
+        	displayMessage("Turns left: " + remainingTurns + "Bricks left: " + nBricksRemaining);
+
     		moveBall();
+    		
+    		if (!didBallHitFloor()) {
+    			remainingTurns--;
+    			if (remainingTurns > 0) {
+    				remove(ball);
+        			drawBall();
+        			setInitialBallVelocity();
+        			displayMessage(remainingTurns + " turns left!");
+        			pause(2000);    				
+    			}
+    		}
     		bounceIfWallCollision();
     		handleObjectCollision();
     		movePaddleOnKeydown();
     		
-    		if (nBricksRemaining == 0) {
-//    			levelFinished();
-    		}
-    		
     		pause(DELAY);
-    		i++;
-    		if (i == 8000) break;
+    	}
+    	
+    	if (nBricksRemaining == 0) {
+        	displayMessage("Level finished!");    		
+    	} else {
+    		displayMessage("Game over!");
+    	}
+    		
+    }
+    
+    public boolean didBallHitFloor() {
+    	double y = ball.getY();
+    	
+    	if ((y + BALL_RADIUS * 2) > HEIGHT) {
+    		return false;
+    	} else {
+    		return true;
     	}
     }
     
@@ -168,7 +196,7 @@ public class Breakout extends GraphicsProgram {
     	double y = ball.getY();
     	
     	if (x <= 0 || (x + BALL_RADIUS * 2) >= WIDTH) vx = -vx;
-    	if (y <= 0 || (y + BALL_RADIUS * 2) >= HEIGHT) vy = -vy;
+    	if (y <= 0) vy = -vy;
     }
     
     /**
@@ -180,7 +208,7 @@ public class Breakout extends GraphicsProgram {
     		vy = -vy;
     		if (obstacle != paddle) {
     			remove(obstacle);
-    			nBricksRemaining -= 1;
+    			nBricksRemaining--;
     		}
     	}
     }
