@@ -64,9 +64,13 @@ public class Breakout extends GraphicsProgram {
     /** Keyboard paddle speed */
     private static final int KEY_PADDLE_SPEED = 3;
     
-    /** Paddle and ball */
-    private GRect paddle;     
+    /** Paddle object */
+    private GRect paddle;
+    
+    /** Ball object */
     private GOval ball;
+    
+    /** message to display */
     private GLabel message;
     
     /** Velocity of the ball */
@@ -84,157 +88,21 @@ public class Breakout extends GraphicsProgram {
     /** Random number generator */
     private RandomGenerator rgen = RandomGenerator.getInstance();
     
+    /**
+     * Handle game setup and start.
+     */
     public void run() {
-    	setupDebugMessage();
     	setupGame();
     	startGame();
     } 
     
+    /**
+     * Draw the basic game elements.
+     */
     private void setupGame() {
     	drawBricks();
     	drawPaddle();
     	drawBall();
-    }
-    
-    private void startGame() {
-    	setInitialBallVelocity();
-    	
-    	addMouseListeners();
-    	addKeyListeners();
-    	
-    	int remainingTurns = NTURNS;
-    	
-    	
-    	while(nBricksRemaining > 0 && remainingTurns > 0) {
-        	displayMessage("Turns left: " + remainingTurns + "Bricks left: " + nBricksRemaining);
-
-    		moveBall();
-    		
-    		if (!didBallHitFloor()) {
-    			remainingTurns--;
-    			if (remainingTurns > 0) {
-    				remove(ball);
-        			drawBall();
-        			setInitialBallVelocity();
-        			displayMessage(remainingTurns + " turns left!");
-        			pause(2000);    				
-    			}
-    		}
-    		bounceIfWallCollision();
-    		handleObjectCollision();
-    		movePaddleOnKeydown();
-    		
-    		pause(DELAY);
-    	}
-    	
-    	if (nBricksRemaining == 0) {
-        	displayMessage("Level finished!");    		
-    	} else {
-    		displayMessage("Game over!");
-    	}
-    		
-    }
-    
-    public boolean didBallHitFloor() {
-    	double y = ball.getY();
-    	
-    	if ((y + BALL_RADIUS * 2) > HEIGHT) {
-    		return false;
-    	} else {
-    		return true;
-    	}
-    }
-    
-    public void mouseMoved(MouseEvent e) {
-    	int paddleOffset = e.getX() - paddleXPosition;
-    	paddleXPosition += paddleOffset;
-    	
-    	paddle.move(paddleOffset, 0);
-    }
-
-    public void keyTyped(KeyEvent e) {
-    	displayMessage("Key typed");
-    }
-    
-    public void keyPressed(KeyEvent e) {
-    	int keyCode = e.getKeyCode();
-    	
-    	if (keyCode == 37) {
-    		keyMouseMove = -KEY_PADDLE_SPEED;
-    	}
-    	if (keyCode == 39) {
-    		keyMouseMove = KEY_PADDLE_SPEED;
-    	}
-    }
-    
-    public void keyReleased(KeyEvent e)  {
-    	keyMouseMove = 0;
-    }
-    
-    public void movePaddleOnKeydown() {
-    	if (keyMouseMove == 0) return;
-    	double paddlePosition = paddle.getX();
-    	
-    	if (paddlePosition <= 0 && keyMouseMove == -KEY_PADDLE_SPEED) return;
-    	if (paddlePosition > WIDTH - PADDLE_WIDTH && keyMouseMove == KEY_PADDLE_SPEED) return;
-
-    	paddle.move(keyMouseMove, 0);
-    }
-    
-    /**
-     * move the ball according to vx and vy.
-     */
-    private void moveBall() {
-    	ball.move(vx, vy);
-    }
-    
-    /**
-     * Reverse vx or vy if ball collides with wall.
-     */
-    private void bounceIfWallCollision() {
-    	double x = ball.getX();
-    	double y = ball.getY();
-    	
-    	if (x <= 0 || (x + BALL_RADIUS * 2) >= WIDTH) vx = -vx;
-    	if (y <= 0) vy = -vy;
-    }
-    
-    /**
-     * 
-     */
-    private void handleObjectCollision() {
-    	GObject obstacle = getCollidingObject();
-    	if (obstacle != null) {
-    		vy = -vy;
-    		if (obstacle != paddle) {
-    			remove(obstacle);
-    			nBricksRemaining--;
-    		}
-    	}
-    }
-    
-    private GObject getCollidingObject() {
-    	double x1 = ball.getX();
-    	double y1 = ball.getY();
-    	double x2 = x1 + BALL_RADIUS * 2;
-    	double y2 = y1 + BALL_RADIUS * 2;
-   
-    	if (getElementAt(x1, y1) != null) return getElementAt(x1, y1);
-    	if (getElementAt(x1, y2) != null) return getElementAt(x1, y2);
-    	if (getElementAt(x2, y1) != null) return getElementAt(x2, y1);
-    	if (getElementAt(x2, y2) != null) return getElementAt(x2, y2);
-    
-    	return null;
-    }
-    
-    /**
-     * Set initial value for vx and vy.
-     */
-    private void setInitialBallVelocity() {
-    	vx = rgen.nextDouble(1.0, 3.0);
-    	if (rgen.nextBoolean(0.5)) vx = -vx;
-    	
-    	vy = 3;
     }
     
     /**
@@ -311,13 +179,187 @@ public class Breakout extends GraphicsProgram {
     	brick.setFillColor(color);
     	add(brick);
     }
+
+	/**
+	 * Main game loop.
+	 */
+    private void startGame() {
+    	setInitialBallVelocity();
+    	
+    	addMouseListeners();
+    	addKeyListeners();
+    	
+    	int remainingTurns = NTURNS;
+    	
+    	
+    	while(nBricksRemaining > 0 && remainingTurns > 0) {
+        	displayMessage("Turns left: " + remainingTurns + "Bricks left: " + nBricksRemaining);
+
+    		moveBall();
+    		
+    		if (!didBallHitFloor()) {
+    			remainingTurns--;
+    			if (remainingTurns > 0) {
+    				remove(ball);
+        			drawBall();
+        			setInitialBallVelocity();
+        			displayMessage(remainingTurns + " turns left!");
+        			pause(2000);    				
+    			}
+    		}
+    		bounceIfWallCollision();
+    		handleObjectCollision();
+    		movePaddleOnKeydown();
+    		
+    		pause(DELAY);
+    	}
+    	
+    	if (nBricksRemaining == 0) {
+        	displayMessage("Level finished!");    		
+    	} else {
+    		displayMessage("Game over!");
+    	}
+    		
+    }
+        
+	/**
+	 * Set initial value for horizontal and vertical ball velocity.
+	 */
+	private void setInitialBallVelocity() {
+		vx = rgen.nextDouble(1.0, 3.0);
+		if (rgen.nextBoolean(0.5)) vx = -vx;
+		
+		vy = 3;
+	}    
     
+	/**
+	 * Check for collision with floor.
+	 * @return - Boolean - True on floor collision.
+	 */
+    private boolean didBallHitFloor() {
+    	double y = ball.getY();
+    	
+    	if ((y + BALL_RADIUS * 2) > HEIGHT) {
+    		return false;
+    	} else {
+    		return true;
+    	}
+    }
+    
+    /**
+     * move the ball according to vx and vy.
+     */
+    private void moveBall() {
+    	ball.move(vx, vy);
+    }
+    
+    /**
+     * Reverse vx or vy if ball collides with wall.
+     */
+    private void bounceIfWallCollision() {
+    	double x = ball.getX();
+    	double y = ball.getY();
+    	
+    	if (x <= 0 || (x + BALL_RADIUS * 2) >= WIDTH) vx = -vx;
+    	if (y <= 0) vy = -vy;
+    }
+    
+    /**
+     * If the ball collides with a brick, remove it; bounce for brick or paddle.
+     */
+    private void handleObjectCollision() {
+    	GObject obstacle = getCollidingObject();
+    	
+    	if (obstacle != null) {
+    		vy = -vy;
+    		
+    		// if the object isn't the paddle, it's a brick
+    		if (obstacle != paddle) {
+    			remove(obstacle);
+    			nBricksRemaining--;
+    		}
+    	}
+    }
+    
+    /**
+     * Return object the paddle has collided with, if any.
+     * @return - Colliding GObject or null.
+     */
+    private GObject getCollidingObject() {
+    	double x1 = ball.getX();
+    	double y1 = ball.getY();
+    	double x2 = x1 + BALL_RADIUS * 2;
+    	double y2 = y1 + BALL_RADIUS * 2;
+   
+    	if (getElementAt(x1, y1) != null) return getElementAt(x1, y1);
+    	if (getElementAt(x1, y2) != null) return getElementAt(x1, y2);
+    	if (getElementAt(x2, y1) != null) return getElementAt(x2, y1);
+    	if (getElementAt(x2, y2) != null) return getElementAt(x2, y2);
+    
+    	return null;
+    }    
+
+    /**
+     * Move the paddle if an arrow key is being held down.
+     */
+    public void movePaddleOnKeydown() {
+    	if (keyMouseMove == 0) return;
+    	double paddlePosition = paddle.getX();
+    	
+    	// Don't move if the paddle is already at the left or right edge.
+    	if (paddlePosition <= 0 && keyMouseMove == -KEY_PADDLE_SPEED) return;
+    	if (paddlePosition > WIDTH - PADDLE_WIDTH && keyMouseMove == KEY_PADDLE_SPEED) return;
+
+    	paddle.move(keyMouseMove, 0);
+    }
+
+    /**
+     * Handle mouse movement events.
+     */
+    public void mouseMoved(MouseEvent e) {
+    	int paddleOffset = e.getX() - paddleXPosition;
+    	paddleXPosition += paddleOffset;
+    	
+    	paddle.move(paddleOffset, 0);
+    }
+    
+    /**
+     * Key event: set negative paddle speed for left, positive for right.
+     */
+    public void keyPressed(KeyEvent e) {
+    	int keyCode = e.getKeyCode();
+    	
+    	if (keyCode == 37) {
+    		keyMouseMove = -KEY_PADDLE_SPEED;
+    	}
+    	if (keyCode == 39) {
+    		keyMouseMove = KEY_PADDLE_SPEED;
+    	}
+    }
+    
+    /**
+     * Key event: reset paddle speed on key up.
+     */
+    public void keyReleased(KeyEvent e)  {
+    	keyMouseMove = 0;
+    }
+        
+    /**
+     * Display message in top left corner.
+     * @param info - String - message to display.
+     */
+    private void displayMessage(String info) {
+    	if (message == null) {
+    		setupDebugMessage();
+    	}
+    	message.setLabel("" + info);
+    }
+    
+    /**
+     * Create label for displaying debug message.
+     */
     private void setupDebugMessage() {
     	message = new GLabel("");
     	add(message, 10, 10);
-    }
-    
-    private void displayMessage(String info) {
-    	message.setLabel("" + info);
-    }
+    }    
 }
