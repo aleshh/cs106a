@@ -53,7 +53,7 @@ public class Breakout extends GraphicsProgram {
 	private static final int BALL_RADIUS = 10;
 	
 	/** Offset of the top brick row from the top */ 
-	private static final int BRICK_Y_OFFSET = 70;
+	private static final int BRICK_Y_OFFSET = 70;	
 	
 	/** Number of turns */
     private static final int NTURNS = 3;
@@ -62,7 +62,7 @@ public class Breakout extends GraphicsProgram {
     private static final int DELAY = 7;
     
     /** Keyboard paddle speed */
-    private static final int KEY_PADDLE_SPEED = 3;
+    private static final int KEY_PADDLE_SPEED = 5;
     
     /** Paddle object */
     private GRect paddle;
@@ -73,13 +73,19 @@ public class Breakout extends GraphicsProgram {
     /** message to display */
     private GLabel message;
     
-    /** Velocity of the ball */
-    private double vx, vy;
+    /** Horizontal velocity of the ball */
+    private double vx;
+    
+    /** Vertical velocity of the ball */
+    private double vy;
+    
+    /** Number of times paddle and ball have collided */
+    private int paddleCollisionCount = 0;
     
     /** Paddle distance from left edge in pixels. */
     private int paddleXPosition = (WIDTH / 2) - (PADDLE_WIDTH / 2);
     
-    /** Current mouse movement by keyboard: -1, 0, or 1 */
+    /** Current mouse movement by keyboard: 0, or positive or negative KEY_PADDLE_SPEED. */
     private int keyMouseMove = 0;
     
     /** Bricks remaining in level */
@@ -93,7 +99,7 @@ public class Breakout extends GraphicsProgram {
      */
     public void run() {
     	setupGame();
-    	startGame();
+    	playGame();
     } 
     
     /**
@@ -103,6 +109,11 @@ public class Breakout extends GraphicsProgram {
     	drawBricks();
     	drawPaddle();
     	drawBall();
+    	
+    	setInitialBallVelocity();
+    	
+    	addMouseListeners();
+    	addKeyListeners();
     }
     
     /**
@@ -183,30 +194,22 @@ public class Breakout extends GraphicsProgram {
 	/**
 	 * Main game loop.
 	 */
-    private void startGame() {
-    	setInitialBallVelocity();
-    	
-    	addMouseListeners();
-    	addKeyListeners();
-    	
+    private void playGame() {    	
     	int remainingTurns = NTURNS;
-    	
     	
     	while(nBricksRemaining > 0 && remainingTurns > 0) {
         	displayMessage("Turns left: " + remainingTurns + "Bricks left: " + nBricksRemaining);
 
-    		moveBall();
+        	ball.move(vx, vy);
     		
     		if (!didBallHitFloor()) {
     			remainingTurns--;
+    			
     			if (remainingTurns > 0) {
-    				remove(ball);
-        			drawBall();
-        			setInitialBallVelocity();
-        			displayMessage(remainingTurns + " turns left!");
-        			pause(2000);    				
+    				resetForNextTurn();
     			}
     		}
+    		
     		bounceIfWallCollision();
     		handleObjectCollision();
     		movePaddleOnKeydown();
@@ -218,8 +221,7 @@ public class Breakout extends GraphicsProgram {
         	displayMessage("Level finished!");    		
     	} else {
     		displayMessage("Game over!");
-    	}
-    		
+    	}	
     }
         
 	/**
@@ -239,28 +241,31 @@ public class Breakout extends GraphicsProgram {
     private boolean didBallHitFloor() {
     	double y = ball.getY();
     	
-    	if ((y + BALL_RADIUS * 2) > HEIGHT) {
-    		return false;
-    	} else {
-    		return true;
-    	}
+    	return (y + BALL_RADIUS * 2) <= HEIGHT;
     }
-    
+
     /**
-     * move the ball according to vx and vy.
+     * Prepare board for next ball.
      */
-    private void moveBall() {
-    	ball.move(vx, vy);
+    private void resetForNextTurn() {
+		remove(ball);
+		drawBall();
+		setInitialBallVelocity();
+		paddleCollisionCount = 0;
+		pause(2000);    				
     }
     
     /**
-     * Reverse vx or vy if ball collides with wall.
+     * Reverse velocity if ball collides with wall or ceiling.
      */
     private void bounceIfWallCollision() {
     	double x = ball.getX();
     	double y = ball.getY();
     	
+    	// Ball hits side
     	if (x <= 0 || (x + BALL_RADIUS * 2) >= WIDTH) vx = -vx;
+    	
+    	// Ball hits top
     	if (y <= 0) vy = -vy;
     }
     
@@ -273,10 +278,16 @@ public class Breakout extends GraphicsProgram {
     	if (obstacle != null) {
     		vy = -vy;
     		
-    		// if the object isn't the paddle, it's a brick
-    		if (obstacle != paddle) {
+    		if (obstacle == paddle) {
+    			paddleCollisionCount++;
+    		} else {
+        		// if the object isn't the paddle, it's a brick
     			remove(obstacle);
     			nBricksRemaining--;
+    		}
+    		
+    		if (paddleCollisionCount == 7) {
+    			vx *= 1.2;
     		}
     	}
     }
