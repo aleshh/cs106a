@@ -25,7 +25,7 @@ public class Breakout extends GraphicsProgram {
 	private static final int HEIGHT = APPLICATION_HEIGHT;
 	
 	/** Dimensions of the paddle */
-	private static final int PADDLE_WIDTH = 60; 
+	private static final int PADDLE_WIDTH = 400; 
 	private static final int PADDLE_HEIGHT = 10;
 	
 	/** Offset of the paddle up from the bottom */ 
@@ -155,8 +155,8 @@ public class Breakout extends GraphicsProgram {
      * Draw the ball.
      */
     private void drawBall() {
-    	int x = WIDTH / 2 - BALL_RADIUS;
-    	int y = HEIGHT / 2 - BALL_RADIUS;
+    	int x = getWidth() / 2 - BALL_RADIUS;
+    	int y = getHeight() / 2 - BALL_RADIUS;
     	ball = new GOval(BALL_RADIUS * 2, BALL_RADIUS * 2);
     	ball.setFilled(true);
     	ball.setFillColor(Color.BLACK);
@@ -263,7 +263,7 @@ public class Breakout extends GraphicsProgram {
     	double y = ball.getY();
     	
     	// Ball hits side
-    	if (x <= 0 || (x + BALL_RADIUS * 2) >= WIDTH) vx = -vx;
+    	if (x <= 0 || (x + BALL_RADIUS * 2) >= getWidth()) vx = -vx;
     	
     	// Ball hits top
     	if (y <= 0) vy = -vy;
@@ -275,21 +275,27 @@ public class Breakout extends GraphicsProgram {
     private void handleObjectCollision() {
     	GObject obstacle = getCollidingObject();
     	
-    	if (obstacle != null) {
-    		vy = -vy;
-    		
-    		if (obstacle == paddle) {
-    			paddleCollisionCount++;
-    		} else {
-        		// if the object isn't the paddle, it's a brick
-    			remove(obstacle);
-    			nBricksRemaining--;
-    		}
-    		
-    		if (paddleCollisionCount == 7) {
-    			vx *= 1.2;
-    		}
-    	}
+    	if (obstacle == null) return;
+    	if (obstacle == message) return;
+    	
+		vy = -vy;
+		
+		if (obstacle == paddle) {
+			paddleCollisionCount++;
+			
+			// if we're hitting the paddle's side, we need to also bounce horizontally
+			if (ball.getY() + BALL_RADIUS * 2 <= PADDLE_POSITION) {
+				vx = -vx;
+			}
+		} else {
+    		// if the object isn't the paddle, it's a brick
+			remove(obstacle);
+			nBricksRemaining--;
+		}
+		
+		if (paddleCollisionCount == 7) {
+			vx *= 1.1;
+		}
     }
     
     /**
@@ -319,7 +325,7 @@ public class Breakout extends GraphicsProgram {
     	
     	// Don't move if the paddle is already at the left or right edge.
     	if (paddlePosition <= 0 && keyMouseMove == -KEY_PADDLE_SPEED) return;
-    	if (paddlePosition > WIDTH - PADDLE_WIDTH && keyMouseMove == KEY_PADDLE_SPEED) return;
+    	if (paddlePosition > getWidth() - PADDLE_WIDTH && keyMouseMove == KEY_PADDLE_SPEED) return;
 
     	paddle.move(keyMouseMove, 0);
     }
