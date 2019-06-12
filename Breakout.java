@@ -25,7 +25,7 @@ public class Breakout extends GraphicsProgram {
 	private static final int HEIGHT = APPLICATION_HEIGHT;
 	
 	/** Dimensions of the paddle */
-	private static final int PADDLE_WIDTH = 400; 
+	private static final int PADDLE_WIDTH = 70; 
 	private static final int PADDLE_HEIGHT = 10;
 	
 	/** Offset of the paddle up from the bottom */ 
@@ -98,8 +98,10 @@ public class Breakout extends GraphicsProgram {
      * Handle game setup and start.
      */
     public void run() {
-    	setupGame();
-    	playGame();
+    	while(true) {
+    	   	setupGame();
+        	playGame();
+    	}
     } 
     
     /**
@@ -108,12 +110,8 @@ public class Breakout extends GraphicsProgram {
     private void setupGame() {
     	drawBricks();
     	drawPaddle();
-    	drawBall();
-    	
+    	drawBall();    	
     	setInitialBallVelocity();
-    	
-    	addMouseListeners();
-    	addKeyListeners();
     }
     
     /**
@@ -195,8 +193,13 @@ public class Breakout extends GraphicsProgram {
 	 * Main game loop.
 	 */
     private void playGame() {    	
+    	addMouseListeners();
+    	addKeyListeners();
+
     	int remainingTurns = NTURNS;
-    	
+
+	   	displayModalUntilClick("BREAKOUT", "Click to start!");
+	   	
     	while(nBricksRemaining > 0 && remainingTurns > 0) {
         	displayMessage("Turns left: " + remainingTurns + "Bricks left: " + nBricksRemaining);
 
@@ -217,11 +220,13 @@ public class Breakout extends GraphicsProgram {
     		pause(DELAY);
     	}
     	
+    	
     	if (nBricksRemaining == 0) {
-        	displayMessage("Level finished!");    		
+    	   	displayModalUntilClick("Level finished!", "Click to continue");
     	} else {
-    		displayMessage("Game over!");
+    	   	displayModalUntilClick("Game Over!", "Click to continue");
     	}	
+    	removeAll();
     }
         
 	/**
@@ -323,7 +328,7 @@ public class Breakout extends GraphicsProgram {
     	if (keyMouseMove == 0) return;
     	double paddlePosition = paddle.getX();
     	
-    	// Don't move if the paddle is already at the left or right edge.
+    	// don't move past the edges of the board
     	if (paddlePosition <= 0 && keyMouseMove == -KEY_PADDLE_SPEED) return;
     	if (paddlePosition > getWidth() - PADDLE_WIDTH && keyMouseMove == KEY_PADDLE_SPEED) return;
 
@@ -334,8 +339,12 @@ public class Breakout extends GraphicsProgram {
      * Handle mouse movement events.
      */
     public void mouseMoved(MouseEvent e) {
-    	int paddleOffset = e.getX() - paddleXPosition;
+    	int paddleOffset = e.getX() - paddleXPosition - PADDLE_WIDTH / 2;
     	paddleXPosition += paddleOffset;
+    	
+    	// don't move past the edges of the board
+    	if (paddle.getX() <= 0 && paddleOffset < 0) return;
+    	if (paddle.getX() + PADDLE_WIDTH >= getWidth() && paddleOffset > 0) return;
     	
     	paddle.move(paddleOffset, 0);
     }
@@ -360,6 +369,41 @@ public class Breakout extends GraphicsProgram {
     public void keyReleased(KeyEvent e)  {
     	keyMouseMove = 0;
     }
+    
+    /**
+     * Display 2-line modal message and wait for click, then remove message.
+     * @param line1 - string - larger title line.
+     * @param line2 - string - smaller secondary line.
+     */
+    private void displayModalUntilClick(String line1, String line2) {
+    	GRect frame1 = new GRect(260, 150);
+    	frame1.setFilled(true);
+    	frame1.setFillColor(Color.WHITE);
+
+    	GRect frame2 = new GRect(260 - 6, 150 - 6);
+
+    	GLabel label1 = new GLabel(line1);
+    	label1.setFont("SansSerif-30");
+
+    	GLabel label2 = new GLabel(line2);
+    	label2.setFont("SansSerif-20");
+    	
+    	int cx = getWidth() / 2;
+    	int cy = getHeight() / 2;
+    	
+    	add(frame1, (cx - frame1.getWidth() / 2), (cy - frame1.getHeight() / 2));
+    	add(frame2, (cx - frame2.getWidth() / 2), (cy - frame2.getHeight() / 2));
+    	add(label1, (cx - label1.getWidth() /2), (cy - label1.getHeight() / 2 ));
+    	add(label2, (cx - label2.getWidth() /2), (cy - label2.getHeight() / 2 + 46));
+    	
+    	waitForClick();
+    	
+    	remove(frame1);
+    	remove(frame2);
+    	remove(label1);
+    	remove(label2);
+    	
+    }
         
     /**
      * Display message in top left corner.
@@ -367,16 +411,17 @@ public class Breakout extends GraphicsProgram {
      */
     private void displayMessage(String info) {
     	if (message == null) {
-    		setupDebugMessage();
+    		setupMessage();
     	}
-    	message.setLabel("" + info);
+    	message.setLabel(info);
+		add(message, 6, 15);
     }
     
     /**
      * Create label for displaying debug message.
      */
-    private void setupDebugMessage() {
+    private void setupMessage() {
     	message = new GLabel("");
-    	add(message, 10, 10);
+    	message.setFont("SansSerif-12");
     }    
 }
