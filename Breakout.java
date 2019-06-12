@@ -202,7 +202,7 @@ public class Breakout extends GraphicsProgram {
 	   	
     	while(nBricksRemaining > 0 && remainingTurns > 0) {
     		int score = (100 - nBricksRemaining) * 100;
-        	displayMessage("Turns left: " + remainingTurns + "    Score: " + score);
+        	displayMessage(vy + "Turns left: " + remainingTurns + "    Score: " + score);
 
         	ball.move(vx, vy);
     		
@@ -286,12 +286,15 @@ public class Breakout extends GraphicsProgram {
     	
 		vy = -vy;
 		
+		System.out.println("ball x: " + ball.getX() + " - " + (ball.getX() + BALL_RADIUS * 2) );
+		System.out.println("paddle x: " + paddleXPosition + " - " + (paddleXPosition + PADDLE_WIDTH) );
 		if (obstacle == paddle) {
 			paddleCollisionCount++;
 			
 			// if we're hitting the paddle's side, we need to also bounce horizontally
-			if (ball.getY() + BALL_RADIUS * 2 <= PADDLE_POSITION) {
-				vx = -vx;
+			if (ball.getX() >= (paddleXPosition + PADDLE_WIDTH) || 
+				(ball.getX() + BALL_RADIUS * 2) <= paddleXPosition ) {
+				vx = -vx;				
 			}
 		} else {
     		// if the object isn't the paddle, it's a brick
