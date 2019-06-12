@@ -201,7 +201,8 @@ public class Breakout extends GraphicsProgram {
 	   	displayModalUntilClick("BREAKOUT", "Click to start!");
 	   	
     	while(nBricksRemaining > 0 && remainingTurns > 0) {
-        	displayMessage("Turns left: " + remainingTurns + "Bricks left: " + nBricksRemaining);
+    		int score = (100 - nBricksRemaining) * 100;
+        	displayMessage("Turns left: " + remainingTurns + "    Score: " + score);
 
         	ball.move(vx, vy);
     		
